@@ -36,15 +36,17 @@ CREATE POLICY user_settings_policy ON settings USING (user_id = auth.uid());
 CREATE POLICY user_sessions_policy ON sessions USING (user_id = auth.uid());
 
 -- Trigger function
+-- Trigger function
 CREATE OR REPLACE FUNCTION new_user_trigger() RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO flows (user_id) VALUES (NEW.id);
-  INSERT INTO credentials (user_id) VALUES (NEW.id);
-  INSERT INTO settings (user_id) VALUES (NEW.id);
-  INSERT INTO sessions (user_id) VALUES (NEW.id);
+  INSERT INTO public.flows (user_id) VALUES (NEW.id);
+  INSERT INTO public.credentials (user_id) VALUES (NEW.id);
+  INSERT INTO public.settings (user_id) VALUES (NEW.id);
+  INSERT INTO public.sessions (user_id) VALUES (NEW.id);
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 
 -- Trigger
 CREATE TRIGGER new_user_trigger
