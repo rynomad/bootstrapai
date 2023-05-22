@@ -6,6 +6,16 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { WebContainer } from "@webcontainer/api";
 import pkg from "./node-red/package.json";
 import ReactLoading from "react-loading";
+window.addEventListener("keydown", function (e) {
+    if (e.key === "F5" || (e.ctrlKey && e.key === "r")) {
+        // This is for 'ctrl + r'
+        e.preventDefault();
+        const frame = document.querySelector("#node-red-iframe");
+        // eslint-disable-next-line no-self-assign
+        frame.src = frame.src;
+        // Your code here
+    }
+});
 
 const styles = {
     container: {
@@ -220,6 +230,7 @@ export default function App() {
     } else {
         return (
             <iframe
+                id={"node-red-iframe"}
                 style={{
                     position: "absolute",
                     top: 0,
