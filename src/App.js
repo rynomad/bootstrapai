@@ -5,7 +5,30 @@ import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { WebContainer } from "@webcontainer/api";
 import pkg from "./node-red/package.json";
+import ReactLoading from "react-loading";
 
+const styles = {
+    container: {
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh",
+        padding: "0 20px",
+        boxSizing: "border-box",
+    },
+    authContainer: {
+        maxWidth: "600px",
+        width: "100%",
+        padding: "20px",
+        border: "1px solid #ddd",
+        borderRadius: "5px",
+    },
+    loadingContainer: {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+    },
+};
 const supabase = createClient(
     process.env.REACT_APP_SUPABASE_URL,
     process.env.REACT_APP_SUPABASE_ANON_KEY
@@ -177,10 +200,23 @@ export default function App() {
 
     if (!session) {
         return (
-            <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} />
+            <div style={styles.container}>
+                <div style={styles.authContainer}>
+                    <Auth
+                        supabaseClient={supabase}
+                        appearance={{ theme: ThemeSupa }}
+                        providers={["email"]}
+                    />
+                </div>
+            </div>
         );
     } else if (!url) {
-        return <div>loading...</div>;
+        return (
+            <div style={{ ...styles.container, ...styles.loadingContainer }}>
+                <ReactLoading type={"bars"} color={"#888"} />
+                <p>Loading...</p>
+            </div>
+        );
     } else {
         return (
             <iframe
