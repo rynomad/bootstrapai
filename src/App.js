@@ -1,25 +1,203 @@
-import logo from './logo.svg';
-import './App.css';
+import "./index.css";
+import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+import { Auth } from "@supabase/auth-ui-react";
+import { ThemeSupa } from "@supabase/auth-ui-shared";
+import { WebContainer } from "@webcontainer/api";
+import pkg from "./node-red/package.json";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+const supabase = createClient(
+    process.env.REACT_APP_SUPABASE_URL,
+    process.env.REACT_APP_SUPABASE_ANON_KEY
+);
+
+const startContainer = async (session) => {
+    // Call only once
+    const webcontainerInstance = (window.webcontainerInstance =
+        await WebContainer.boot({
+            workdirName: "node-red",
+        }));
+
+    pkg.scripts["node-red"] = [
+        `SUPABASE_URL=${process.env.REACT_APP_SUPABASE_URL}`,
+        `SUPABASE_KEY=${process.env.REACT_APP_SUPABASE_ANON_KEY}`,
+        `SUPABASE_ACCESS_TOKEN=${session.access_token}`,
+        `SUPABASE_REFRESH_TOKEN=${session.refresh_token}`,
+        `node-red`,
+        `--userDir`,
+        `./`,
+    ].join(" ");
+
+    await webcontainerInstance.mount({
+        "package.json": {
+            file: {
+                contents: JSON.stringify(pkg),
+            },
+        },
+    });
+
+    await webcontainerInstance.fs.mkdir("cache");
+
+    await fetchAndWriteFiles(webcontainerInstance);
+
+    let installProcess = await webcontainerInstance.spawn("yarn");
+    installProcess.output.pipeTo(
+        new WritableStream({
+            write(data) {
+                console.log(data);
+            },
+        })
+    );
+
+    // installProcess.
+
+    await installProcess.exit;
+
+    installProcess = await webcontainerInstance.spawn("yarn", ["untar"]);
+    installProcess.output.pipeTo(
+        new WritableStream({
+            write(data) {
+                console.log(data);
+            },
+        })
+    );
+
+    await installProcess.exit;
+
+    installProcess = await webcontainerInstance.spawn("yarn", ["local"]);
+    installProcess.output.pipeTo(
+        new WritableStream({
+            write(data) {
+                console.log(data);
+            },
+        })
+    );
+
+    await installProcess.exit;
+
+    return startDevServer(webcontainerInstance);
+};
+
+async function startDevServer(container) {
+    // Run `npm run start` to start the Express app
+    const runProcess = await container.spawn("npm", ["run", "node-red"]);
+
+    // Wait for `server-ready` event
+
+    runProcess.output.pipeTo(
+        new WritableStream({
+            write(data) {
+                console.log(data);
+            },
+        })
+    );
+
+    container.on("error", (e) => {
+        console.log(e);
+    });
+
+    return new Promise((resolve) => {
+        container.on("server-ready", async (port, url) => {
+            resolve(url);
+        });
+    });
 }
+const fetchAndWriteFiles = async (container) => {
+    // Array of files to fetch and write
+    const files = [
+        {
+            url: "/node-red/node-red-contrib-chatgpt-1.4.2.tgz",
+            path: "node-red-contrib-chatgpt-1.4.2.tgz",
+        },
+        {
+            url: "/node-red/untar.js",
+            path: "untar.js",
+        },
+        {
+            url: "/node-red/node-red-contrib-supabase-storage-0.0.1.tgz",
+            path: "node-red-contrib-supabase-storage-0.0.1.tgz",
+        },
+        {
+            url: "/node-red/settings.js",
+            path: "settings.js",
+        },
+    ];
 
-export default App;
+    // Fetch and write each file
+    for (const file of files) {
+        try {
+            const response = await fetch(file.url);
+            const blob = await response.blob();
+            console.log(file, blob);
+            // Convert the Blob to ArrayBuffer
+            const arrayBuffer = await new Response(blob).arrayBuffer();
+
+            // Write the file to the virtual file system
+            await container.fs.writeFile(
+                file.path,
+                new Uint8Array(arrayBuffer),
+                { encoding: "buffer" }
+            );
+
+            console.log(`File ${file.path} has been written successfully.`);
+        } catch (error) {
+            console.error(`Error writing file ${file.path}:`, error);
+        }
+    }
+};
+export default function App() {
+    const [session, setSession] = useState(null);
+    const [url, setUrl] = useState(null);
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session);
+        });
+
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+            setSession(session);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        if (session) {
+            (async () => {
+                const url = await startContainer(session);
+                await new Promise((r) => setTimeout(r, 1000));
+                setUrl(url);
+            })();
+        }
+    }, [session]);
+
+    console.log("session", session);
+
+    if (!session) {
+        return (
+            <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} />
+        );
+    } else if (!url) {
+        return <div>loading...</div>;
+    } else {
+        return (
+            <iframe
+                style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100vw",
+                    height: "100vh",
+                    margin: 0,
+                    padding: 0,
+                    border: "none",
+                    boxSizing: "border-box",
+                }}
+                title="node-red"
+                src={url}
+            ></iframe>
+        );
+    }
+}
