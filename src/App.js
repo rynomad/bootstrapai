@@ -6,6 +6,7 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { WebContainer } from "@webcontainer/api";
 import pkg from "./node-red/package.json";
 import ReactLoading from "react-loading";
+import Config from "./config";
 window.addEventListener("keydown", function (e) {
     if (e.key === "F5" || (e.ctrlKey && e.key === "r")) {
         // This is for 'ctrl + r'
@@ -181,6 +182,7 @@ const fetchAndWriteFiles = async (container) => {
 export default function App() {
     const [session, setSession] = useState(null);
     const [url, setUrl] = useState(null);
+    const [doneConfigCheck] = useState(false);
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -218,6 +220,18 @@ export default function App() {
                         providers={[]}
                     />
                 </div>
+            </div>
+        );
+    } else if (!doneConfigCheck) {
+        return (
+            <div style={{ ...styles.container, ...styles.loadingContainer }}>
+                <ReactLoading type={"bars"} color={"#888"} />
+                <p>Loading...</p>
+                <Config
+                    supabase={supabase}
+                    userId={session.user.id}
+                    onComplete={() => setDoneConfigCheck(true)}
+                />
             </div>
         );
     } else if (!url) {
