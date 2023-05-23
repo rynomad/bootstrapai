@@ -182,7 +182,7 @@ const fetchAndWriteFiles = async (container) => {
 export default function App() {
     const [session, setSession] = useState(null);
     const [url, setUrl] = useState(null);
-    const [doneConfigCheck] = useState(false);
+    const [doneConfigCheck, setDoneConfigCheck] = useState(false);
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
