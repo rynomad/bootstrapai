@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Button, Input } from "react-bootstrap"; // you can use whatever UI library
+import { Modal, Button, FormControl } from "react-bootstrap";
 
 const DataChecker = ({ supabase, userId, onComplete }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -51,7 +51,7 @@ const DataChecker = ({ supabase, userId, onComplete }) => {
                         </Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
-                        <Input
+                        <FormControl
                             type="text"
                             placeholder="API Key"
                             value={apiKey}

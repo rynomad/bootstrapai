@@ -109,11 +109,8 @@ const startContainer = async (session) => {
 
     await installProcess.exit;
 
-    return startDevServer(webcontainerInstance);
-};
+    const container = webcontainerInstance;
 
-async function startDevServer(container) {
-    // Run `npm run start` to start the Express app
     const runProcess = await container.spawn("npm", ["run", "node-red"]);
 
     // Wait for `server-ready` event
@@ -135,6 +132,10 @@ async function startDevServer(container) {
             resolve(url);
         });
     });
+};
+
+async function startDevServer(container) {
+    // Run `npm run start` to start the Express app
 }
 const fetchAndWriteFiles = async (container) => {
     // Array of files to fetch and write
