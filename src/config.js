@@ -10,12 +10,13 @@ const DataChecker = ({ supabase, userId, onComplete }) => {
         const checkData = async () => {
             let { data: credentialsData, error: credentialsError } =
                 await supabase
-                    .from("public.credentials")
+                    .from("credentials")
                     .select("data")
                     .eq("user_id", userId)
                     .single();
 
             if (credentialsError || !credentialsData || !credentialsData.data) {
+                console.log("creds", credentialsData, credentialsError);
                 setIsModalOpen(true);
                 return;
             }
