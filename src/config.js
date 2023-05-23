@@ -29,13 +29,11 @@ const DataChecker = ({ supabase, userId, onComplete }) => {
 
     const handleSave = async () => {
         // Handle the logic to save password and apiKey here
-        const id = await supabase.rpc.call(
-            "vault.create_secret",
-            btoa(`{"1d0773bcf3416404":{"API_KEY":"${apiKey}"}}`)
-        );
         const { error } = await supabase
             .from("credentials")
-            .update({ data: id })
+            .update({
+                data: btoa(`{"1d0773bcf3416404":{"API_KEY":"${apiKey}"}}`),
+            })
             .eq("user_id", userId);
 
         setIsModalOpen(false);
