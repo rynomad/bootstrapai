@@ -40,10 +40,10 @@ const styles = {
         alignItems: "center",
     },
 };
-const supabase = createClient(
+const supabase = (window.supabase = createClient(
     process.env.REACT_APP_SUPABASE_URL,
     process.env.REACT_APP_SUPABASE_ANON_KEY
-);
+));
 
 const startContainer = async (session) => {
     // Call only once
