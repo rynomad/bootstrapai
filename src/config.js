@@ -48,7 +48,7 @@ const DataChecker = ({ supabase, userId, onComplete }) => {
                 <Modal show={isModalOpen} onHide={() => setIsModalOpen(false)}>
                     <Modal.Header closeButton>
                         <Modal.Title>
-                            Please provide necessary details
+                            Please provide your openai API key.
                         </Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
