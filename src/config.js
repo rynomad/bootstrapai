@@ -36,6 +36,8 @@ const DataChecker = ({ supabase, userId, onComplete }) => {
             })
             .eq("user_id", userId);
 
+        console.log("error", error);
+
         setIsModalOpen(false);
         onComplete();
     };
