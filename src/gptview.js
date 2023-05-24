@@ -1,65 +1,82 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
+import { Tree, TreeNode } from "react-d3-tree";
 import { useWebSocket } from "./hooks";
-import impress from "impress.js";
-import "./Impress.css"; // include the necessary CSS here
+
+const CardNode = ({ nodeDatum, toggleNode, foreignObjectProps }) => {
+    return (
+        <g>
+            <circle r={15}></circle>
+            <foreignObject {...foreignObjectProps}>
+                <div
+                    style={{
+                        border: "1px solid gray",
+                        borderRadius: "5px",
+                        padding: "10px",
+                        backgroundColor: "white",
+                        color: "black",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                >
+                    <h3 style={{ textAlign: "center" }}>{nodeDatum.name}</h3>
+                    {nodeDatum.children && (
+                        <button style={{ width: "100%" }} onClick={toggleNode}>
+                            {nodeDatum.__rd3t.collapsed ? "Expand" : "Collapse"}
+                        </button>
+                    )}
+                </div>
+            </foreignObject>
+        </g>
+    );
+};
 
 const HistoryTree = () => {
-    const [messageHistory, setMessageHistory] = useState([]);
-
+    const [treeData, setTreeData] = useState([{ name: "Root", children: [] }]);
     const wsMessage = useWebSocket(process.env.REACT_APP_WS_ENDPOINT);
-    const impressDivRef = useRef(null);
 
     useEffect(() => {
         if (wsMessage !== null) {
-            setMessageHistory((prevHistory) => [
-                ...prevHistory,
-                ...wsMessage.history,
-            ]);
+            const newHistory = [...wsMessage.history];
+            setTreeData((prevData) => {
+                const data = [...prevData];
+                const traverse = (node, history) => {
+                    if (history.length === 0) return;
+                    const message = history[0];
+                    let childNode;
+                    if (Array.isArray(message.content)) {
+                        childNode = message.content.map((content) => ({
+                            name: `${message.role}: ${content}`,
+                            children: [],
+                        }));
+                    } else {
+                        childNode = {
+                            name: `${message.role}: ${message.content}`,
+                            children: [],
+                        };
+                    }
+                    if (node.children) node.children.push(childNode);
+                    traverse(childNode, history.slice(1));
+                };
+                traverse(data[0], newHistory);
+                return data;
+            });
         }
     }, [wsMessage]);
 
-    useEffect(() => {
-        if (impressDivRef.current) {
-            impress().init(); // initialize Impress.js when the component mounts
-        }
-    }, []);
-
-    // helper function to handle array content
-    const handleContent = (content, index, role) => {
-        if (Array.isArray(content)) {
-            return content.map((item, i) => (
-                <div
-                    key={`${index}-${i}`}
-                    className="step"
-                    data-x={500 * i}
-                    data-y={-500 * index}
-                    data-z={0}
-                    data-scale="1"
-                >
-                    <div className={`message ${role}`}>{item}</div>
-                </div>
-            ));
-        } else {
-            return (
-                <div
-                    key={index}
-                    className="step"
-                    data-x={0}
-                    data-y={-500 * index}
-                    data-z={0}
-                    data-scale="1"
-                >
-                    <div className={`message ${role}`}>{content}</div>
-                </div>
-            );
-        }
-    };
-
     return (
-        <div id="impress" ref={impressDivRef}>
-            {messageHistory.flatMap((message, index) =>
-                handleContent(message.content, index, message.role)
-            )}
+        <div style={{ height: "100vh", width: "100%" }}>
+            <Tree
+                data={treeData}
+                pathFunc="step"
+                orientation="vertical"
+                renderCustomNodeElement={(rd3tProps) => (
+                    <CardNode
+                        {...rd3tProps}
+                        foreignObjectProps={{ width: 150, height: 200 }}
+                    />
+                )}
+            />
         </div>
     );
 };

@@ -5,7 +5,8 @@
     "private": true,
     "scripts": {
         "untar": "node untar.js node-red-contrib-chatgpt-1.4.2.tgz; node untar.js node-red-contrib-supabase-storage-0.0.1.tgz;",
-        "local": "yarn add ./node-red-contrib-supabase-storage-0.0.1/package/ && yarn add ./node-red-contrib-chatgpt-1.4.2/package/"
+        "local": "yarn add ./node-red-contrib-supabase-storage-0.0.1/package/ && yarn add ./node-red-contrib-chatgpt-1.4.2/package/",
+        "unpack": "node untar.js node_modules.tgz"
     },
     "dependencies": {
         "ajv": "^8.12.0",
